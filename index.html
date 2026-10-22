@@ -38,7 +38,6 @@
       font-family: 'Jost', sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
       padding: 10px;
     }
 
@@ -2369,7 +2368,8 @@ function flipCard(card, index) {
   <script>
     // Envia a altura real do conteúdo ao pai (iframe parent)
     function enviarAltura() {
-      const altura = document.documentElement.scrollHeight;
+      // mede o conteúdo real (e não a altura do iframe), para o iframe poder encolher
+      const altura = Math.ceil(document.body.getBoundingClientRect().height);
       window.parent.postMessage({ type: 'ruralidades-altura', altura: altura }, '*');
     }
 
@@ -2377,6 +2377,7 @@ function flipCard(card, index) {
     const observer = new ResizeObserver(enviarAltura);
     observer.observe(document.body);
     window.addEventListener('load', enviarAltura);
+    window.addEventListener('resize', enviarAltura);
   </script>
 </body>
 </html>
