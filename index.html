@@ -636,16 +636,14 @@
     .completion-message p { color: var(--muted); font-size: 0.95rem; }
 
     @media (max-width: 600px) {
-      .word-search-container { flex-direction: column; }
+      .word-search-container { flex-direction: column; align-items: stretch; }
+      .grid-container { width: 100%; flex: none; }
       .words-list { flex: 1; width: 100%; max-width: 100%; order: -1; }
       #sopaWordsList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
       .word-item { margin-bottom: 0; }
-      .word-grid { grid-template-columns: repeat(9, 1fr); gap: 2px; padding: 6px; }
-      .grid-cell { font-size: 0.78rem; }
-    }
-    @media (max-width: 380px) {
-      .word-grid { grid-template-columns: repeat(8, 1fr); }
-      .grid-cell { font-size: 0.72rem; }
+      /* a grelha é sempre 12x12: as colunas são definidas no JavaScript */
+      .word-grid { gap: 2px; padding: 5px; }
+      .grid-cell { font-size: clamp(0.62rem, 3.3vw, 0.85rem); border-radius: 2px; }
     }
 
     /* =============================================
@@ -2167,6 +2165,7 @@ function flipCard(card, index) {
       if (!gridElement) return;
 
       gridElement.innerHTML = '';
+      gridElement.style.gridTemplateColumns = 'repeat(' + SOPA_GRID_SIZE + ', 1fr)';
 
       for (let i = 0; i < SOPA_GRID_SIZE; i++) {
         for (let j = 0; j < SOPA_GRID_SIZE; j++) {
