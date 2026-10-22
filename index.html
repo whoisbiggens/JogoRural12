@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogos do Rural — Ruralidades</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* =============================================
+       VARIÁVEIS E RESET
+    ============================================= */
+    :root {
+      --bg:       #F7F3EE;
+      --surface:  #FFFFFF;
+      --surface-2:#F7F3EE;
+      --text:     #1C1C1C;
+      --muted:    #888;
+      --verde:    #0A552B;
+      --vermelho: #AD2422;
+      --border:   #E0DAD2;
+      --success:  #0A552B;
+      --shadow:   0 14px 28px rgba(28,28,28,0.08);
+      --radius:   4px;
+
+      /* Largura máxima única para todos os jogos */
+      --game-width: 680px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { width: 100%; overflow-x: hidden; }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 10px;
+    }
+
+    /* =============================================
+       CONTAINER E NAVEGAÇÃO
+    ============================================= */
+    .container { max-width: 100%; margin: 0 auto; }
+
+    .game-selection {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 0 0 16px;
+    }
+
+    .game-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      padding: 9px 16px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .15s ease;
+      font-family: 'Jost', sans-serif;
+      touch-action: manipulation;
+    }
+    .game-btn:hover  { background: var(--text); color: white; border-color: var(--text); }
+    .game-btn.active { background: var(--vermelho); color: white; border-color: var(--vermelho); }
+
+    /* =============================================
+       ÁREA DE JOGO — envelope igual para todos
+    ============================================= */
+    .game-area {
+      display: none;
+      background: white;
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      max-width: var(--game-width);
+      margin: 0 auto;
+    }
+    .game-area.active { display: block; }
+
+    .game-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stats { font-size: 0.88rem; color: var(--muted); line-height: 1.4; }
+    .stats strong { color: var(--text); }
+
+    .control-btn {
+      background: var(--vermelho);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .15s ease;
+      font-family: 'Jost', sans-serif;
+      touch-action: manipulation;
+    }
+    .control-btn:hover { background: #8a1c1a; }
+
+    .success-message {
+      display: none;
+      text-align: center;
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: rgba(46,125,50,0.10);
+      border: 1px solid rgba(46,125,50,0.25);
+      color: var(--verde);
+      font-family: 'Jost', sans-serif;
+      font-weight: 600;
+      animation: slideIn .35s ease;
+    }
+    .success-message.show { display: block; }
+
+    @keyframes slideIn {
+      from { transform: translateY(-10px); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+
+    /* =============================================
+       MEMÓRIA
+    ============================================= */
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(6px, 1.5vw, 12px);
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .memory-card {
+      aspect-ratio: 1;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid rgba(180,138,90,0.25);
+      box-shadow: 0 6px 14px rgba(47,42,36,0.08);
+      overflow: hidden;
+      background: var(--surface);
+      touch-action: manipulation;
+    }
+
+    .card-front, .card-back {
+      width: 100%; height: 100%;
+      display: grid;
+      place-items: center;
+    }
+
+    .card-front {
+      background: linear-gradient(135deg, rgba(255,159,69,0.30), rgba(255,107,107,0.22));
+      color: rgba(47,42,36,0.65);
+      font-weight: 800;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+    }
+
+    .card-back { display: none; background: var(--surface); padding: 8px; }
+    .memory-card.flipped .card-front { display: none; }
+    .memory-card.flipped .card-back  { display: grid; }
+
+    .memory-card.matched {
+      cursor: default;
+      box-shadow: 0 0 0 2px rgba(46,125,50,0.35);
+    }
+    .memory-card.matched .card-back {
+      background: rgba(46,125,50,0.08);
+      border: 2px solid rgba(46,125,50,0.40);
+    }
+
+    .card-back img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    @media (max-width: 480px) {
+      .memory-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 320px) {
+      .memory-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* =============================================
+       PUZZLE (arrastar peças para o sítio certo)
+    ============================================= */
+    .puzzle-container { max-width: 100%; }
+
+    .pz-levels { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .pz-pick-label { text-align: center; color: var(--muted); font-size: 0.88rem; margin: 0 0 8px; }
+    .pz-pick { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .pz-pick button {
+      width: clamp(50px, 13vw, 66px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      padding: 0;
+      background-color: #fff;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(28,28,28,0.28);
+      transition: transform .15s;
+      touch-action: manipulation;
+    }
+    .pz-pick button[aria-pressed="true"] { border-color: var(--vermelho); transform: scale(1.14); box-shadow: 0 0 0 2px var(--vermelho), 0 4px 10px rgba(28,28,28,0.25); }
+    .pz-msg { min-height: 22px; text-align: center; color: var(--verde); font-weight: 500; font-size: 0.95rem; margin: 0 0 10px; }
+
+    .puzzle-preview { display: grid; gap: 6px; justify-items: center; margin-bottom: 12px; }
+    .puzzle-preview p { color: var(--muted); font-size: 0.82rem; }
+    .puzzle-preview img {
+      width: min(120px, 34vw);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 4px;
+    }
+
+    #pz-board {
+      position: relative;
+      display: grid;
+      gap: 3px;
+      padding: 4px;
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      background: rgba(180,138,90,0.22);
+      border: 1px solid rgba(180,138,90,0.30);
+      margin: 0 auto;
+    }
+
+    .pz-slot {
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+      min-width: 0; min-height: 0;
+      border: 1px dashed rgba(173,36,34,0.45);
+      background-color: #fff;
+      background-image: var(--img);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .pz-slot::after { content: ""; position: absolute; inset: 0; background: #fff; opacity: .82; transition: opacity .3s; }
+    .pz-slot.hot { border: 2px solid var(--vermelho); }
+    .pz-slot.hot::after { background: #fbe9e8; }
+    .pz-slot.full { border-color: transparent; cursor: default; }
+    .pz-slot.full::after { opacity: 0; }
+    #pz-board.fin { gap: 0; border-color: var(--verde); box-shadow: 0 0 0 3px var(--verde); }
+    #pz-board.fin .pz-slot { border: 0; }
+
+    #pz-tray {
+      --tw: clamp(56px, 14vw, 96px);
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center; align-content: flex-start;
+      margin-top: 14px; padding: 14px;
+      min-height: 100px;
+      border: 2px dashed var(--border);
+      background: var(--surface-2);
+    }
+    #pz-tray.n20 { --tw: clamp(48px, 12vw, 84px); gap: 8px; }
+    #pz-tray.n30 { --tw: clamp(40px, 10vw, 72px); gap: 6px; padding: 10px; }
+
+    .pz-piece {
+      width: var(--tw);
+      aspect-ratio: var(--ar);
+      background-color: #fff;
+      background-image: var(--img);
+      border: 2px solid #fff;
+      box-shadow: 0 3px 8px rgba(28,28,28,0.28);
+      cursor: grab;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+      transform: rotate(var(--rot));
+      transition: transform .15s;
+    }
+    .pz-piece.sel  { outline: 3px solid var(--vermelho); transform: scale(1.1); }
+    .pz-piece.drag { opacity: .25; }
+    .pz-piece.shake { animation: pzShake .4s; }
+    @keyframes pzShake { 25% { transform: translateX(-5px) rotate(var(--rot)); } 75% { transform: translateX(5px) rotate(var(--rot)); } }
+
+    .pz-ghost {
+      position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none;
+      background-image: var(--img);
+      border: 2px solid #fff;
+      box-shadow: 0 14px 26px rgba(0,0,0,0.35);
+    }
+
+    /* =============================================
+       ASSOCIAÇÃO
+    ============================================= */
+    .assoc-wrap { max-width: 100%; }
+    .assoc-instructions { text-align: center; color: var(--muted); margin: 0 0 14px; font-size: 0.92rem; }
+
+    .assoc-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .assoc-images { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .assoc-phrases { display: grid; gap: 10px; }
+
+    .assoc-card {
+      background: #FFF;
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 10px;
+      box-shadow: 0 6px 16px rgba(47,42,36,0.06);
+    }
+
+    .assoc-image-top { display: grid; grid-template-rows: auto 1fr; gap: 8px; align-items: start; }
+
+    .assoc-image-top img {
+      width: 100%; height: 110px;
+      object-fit: contain;
+      border: 1px solid rgba(0,0,0,0.06);
+      background: #FAFAFA;
+      padding: 6px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .assoc-image-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.15;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .assoc-dropzone {
+      border: 2px dashed rgba(0,0,0,0.15);
+      padding: 10px;
+      min-height: 52px;
+      display: grid;
+      align-items: center;
+      background: #F8F8F8;
+      transition: border-color .15s, background .15s;
+    }
+    .assoc-dropzone.hover { border-color: rgba(255,159,69,0.9); background: rgba(255,159,69,0.08); }
+
+    .assoc-placeholder { color: var(--muted); font-size: 0.82rem; }
+
+    .assoc-phrase {
+      background: #FFF;
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 10px 12px;
+      cursor: grab;
+      font-weight: 700;
+      font-size: 0.88rem;
+      line-height: 1.3;
+      box-shadow: 0 4px 10px rgba(47,42,36,0.05);
+      transition: transform .12s, border-color .12s;
+      user-select: none;
+    }
+    .assoc-phrase:active { cursor: grabbing; }
+    .assoc-phrase.selected { border-color: rgba(255,159,69,0.85); transform: translateY(-1px); }
+    .assoc-phrase.correct  { background: rgba(46,125,50,0.10); border-color: rgba(46,125,50,0.45); cursor: default; }
+    .assoc-phrase.wrong    { border-color: rgba(220,53,69,0.60); text-decoration: underline; text-decoration-color: rgba(220,53,69,0.9); }
+
+    @media (max-width: 540px) {
+      .assoc-container { grid-template-columns: 1fr; }
+      .assoc-images    { grid-template-columns: repeat(2, 1fr); }
+      .assoc-image-top img { height: 90px; }
+    }
+
+    /* =============================================
+       COBRA RURAL (Snake)
+    ============================================= */
+    .snake-wrap { max-width: 100%; }
+
+    .snake-box {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .snake-header { text-align: center; margin-bottom: 10px; }
+    .snake-header h2 {
+      color: var(--vermelho);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.2rem, 3vw, 1.5rem);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .snake-header p { color: var(--muted); font-size: 0.88rem; }
+
+    .snake-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background: #F6F1EA;
+      border-radius: 8px;
+      border: 1px solid #E7DDD0;
+      flex-wrap: wrap;
+    }
+
+    .snake-score { display: flex; gap: 14px; align-items: center; }
+    .snake-score div { font-size: 0.92rem; font-weight: 700; color: var(--vermelho); }
+
+    .snake-top-controls { display: flex; gap: 8px; }
+
+    .snake-icon-btn {
+      background: var(--verde);
+      color: white;
+      border: none;
+      width: 38px; height: 38px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+
+    #snakeCanvas {
+      width: 100% !important;
+      max-width: min(440px, 90vw) !important;
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      display: block;
+      margin: 0 auto;
+      touch-action: none;
+    }
+
+    .snake-controls {
+      display: grid;
+      grid-template-columns: repeat(3, clamp(48px, 9vw, 66px));
+      grid-template-rows:    repeat(3, clamp(48px, 9vw, 66px));
+      gap: 6px;
+      margin: 12px auto 0;
+      width: fit-content;
+    }
+
+    .snake-control-btn {
+      background: var(--verde);
+      color: white;
+      border: none;
+      font-size: clamp(1.2rem, 3.5vw, 1.8rem);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .snake-control-btn:active { transform: scale(0.96); }
+
+    #snakeUp    { grid-column: 2; grid-row: 1; }
+    #snakeLeft  { grid-column: 1; grid-row: 2; }
+    #snakeRight { grid-column: 3; grid-row: 2; }
+    #snakeDown  { grid-column: 2; grid-row: 3; }
+
+    .snake-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(246,241,234,0.96);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+      padding: 16px;
+      text-align: center;
+    }
+    .snake-overlay.hidden { display: none; }
+
+    .snake-overlay h3 {
+      color: var(--vermelho);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+
+    .snake-characters { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+    .snake-character {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      cursor: pointer;
+      text-align: center;
+      min-width: 110px;
+      transition: all 0.2s ease;
+    }
+    .snake-character:hover { transform: translateY(-2px); border-color: #8B4513; }
+    .snake-character .emoji { font-size: 2.4rem; }
+    .snake-character p { margin-top: 8px; color: #8B4513; font-weight: 700; font-size: 0.9rem; }
+
+    .snake-gameover { background: rgba(0,0,0,0.72); color: white; }
+    .snake-gameover .panel {
+      background: white;
+      color: #2F2A24;
+      border-radius: 12px;
+      padding: 18px;
+      max-width: 360px;
+      width: 92%;
+    }
+    .snake-gameover .panel h3 { color: #8B4513; margin-bottom: 8px; }
+    .snake-gameover .panel p  { color: #6C6258; font-size: 1rem; margin: 4px 0; }
+
+    .snake-restart {
+      margin-top: 12px;
+      background: var(--verde);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    /* =============================================
+       SOPA DE LETRAS
+    ============================================= */
+    .word-search-container {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .grid-container { flex: 1; min-width: 0; }
+
+    .word-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 3px;
+      width: 100%;
+      max-width: 100%;
+      background: var(--surface-2);
+      padding: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .grid-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border: 1px solid rgba(180,138,90,0.22);
+      border-radius: 3px;
+      font-weight: 600;
+      font-size: clamp(0.65rem, 1.8vw, 0.95rem);
+      cursor: pointer;
+      transition: all .12s ease;
+      user-select: none;
+      font-family: 'Cormorant Garamond', serif;
+      touch-action: manipulation;
+    }
+    .grid-cell:hover   { background: rgba(255,159,69,0.15); }
+    .grid-cell.selected{ background: linear-gradient(135deg, rgba(255,159,69,0.35), rgba(255,107,107,0.28)); border-color: rgba(255,159,69,0.75); }
+    .grid-cell.found   { background: rgba(46,125,50,0.22); border-color: rgba(46,125,50,0.55); color: var(--success); animation: foundPulse .35s ease; }
+
+    @keyframes foundPulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.10); }
+    }
+
+    .words-list {
+      flex: 0 0 180px;
+      background: var(--surface-2);
+      padding: 14px;
+      border: 1px solid var(--border);
+      align-self: flex-start;
+    }
+    .words-list h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+
+    .word-item {
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      background: var(--surface);
+      border: 1px solid rgba(180,138,90,0.18);
+      font-size: 0.88rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+    .word-item.found {
+      background: rgba(46,125,50,0.12);
+      border-color: rgba(46,125,50,0.38);
+      text-decoration: line-through;
+      color: var(--success);
+    }
+
+    .completion-message {
+      display: none;
+      text-align: center;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(46,125,50,0.18), rgba(46,125,50,0.08));
+      border: 2px solid rgba(46,125,50,0.45);
+      margin-top: 16px;
+      animation: slideIn .35s ease;
+    }
+    .completion-message.show { display: block; }
+    .completion-message h2 {
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--success);
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+    .completion-message p { color: var(--muted); font-size: 0.95rem; }
+
+    @media (max-width: 600px) {
+      .word-search-container { flex-direction: column; }
+      .words-list { flex: 1; width: 100%; max-width: 100%; order: -1; }
+      #sopaWordsList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .word-item { margin-bottom: 0; }
+      .word-grid { grid-template-columns: repeat(9, 1fr); gap: 2px; padding: 6px; }
+      .grid-cell { font-size: 0.78rem; }
+    }
+    @media (max-width: 380px) {
+      .word-grid { grid-template-columns: repeat(8, 1fr); }
+      .grid-cell { font-size: 0.72rem; }
+    }
+
+    /* =============================================
+       QUIZZ
+    ============================================= */
+    .quiz-container { max-width: 100%; }
+
+    .quiz-question-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--vermelho);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .quiz-question-box h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .quiz-options { display: grid; gap: 10px; margin-bottom: 16px; }
+
+    .quiz-option {
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color .15s ease, background .15s ease;
+      touch-action: manipulation;
+    }
+    .quiz-option:hover:not(.quiz-option-disabled) { border-color: var(--vermelho); background: var(--surface-2); }
+
+    .quiz-option-letter {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; flex-shrink: 0;
+      background: var(--vermelho); color: #fff;
+      border-radius: 50%;
+      font-weight: 600; font-size: 0.85rem;
+    }
+
+    .quiz-option-correct { background: rgba(10,85,43,0.10); border-color: var(--verde); border-width: 2px; }
+    .quiz-option-correct .quiz-option-letter { background: var(--verde); }
+    .quiz-option-incorrect { background: rgba(173,36,34,0.10); border-color: var(--vermelho); border-width: 2px; }
+    .quiz-option-disabled { cursor: default; }
+    .quiz-option-disabled:not(.quiz-option-correct):not(.quiz-option-incorrect) { opacity: .65; }
+
+    .quiz-feedback { border: 1px solid var(--border); padding: 14px; text-align: center; margin-bottom: 14px; background: #fff; animation: slideIn .35s ease; }
+    .quiz-feedback p { font-size: 0.98rem; margin-bottom: 12px; line-height: 1.5; }
+    .quiz-feedback.correct   { background: rgba(10,85,43,0.08);  border-color: var(--verde); }
+    .quiz-feedback.incorrect { background: rgba(173,36,34,0.08); border-color: var(--vermelho); }
+
+    .quiz-final { background: var(--surface-2); border: 1px solid var(--border); padding: 24px 16px; text-align: center; }
+    .quiz-final h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: var(--verde); margin-bottom: 12px; }
+    .quiz-final p { font-size: 1rem; line-height: 1.6; margin-bottom: 10px; }
+    .quiz-final strong { color: var(--vermelho); }
+
+    @media (max-width: 520px) {
+      .quiz-question-box { padding: 14px; }
+      .quiz-question-box h3 { font-size: 1.12rem; }
+      .quiz-option { padding: 12px; }
+    }
+
+    /* =============================================
+       RESPONSIVO GLOBAL
+    ============================================= */
+    @media (max-width: 600px) {
+      body { padding: 6px; }
+      .game-area { padding: 12px; }
+      .game-btn  { padding: 8px 10px; font-size: 0.68rem; }
+      .game-controls { justify-content: center; text-align: center; }
+    }
+
+    .hidden { display: none !important; }
+
+
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="game-selection">
+      <button class="game-btn active" id="btn-memory" onclick="showGame('memory')">Jogo da Memória</button>
+      <button class="game-btn" id="btn-puzzle" onclick="showGame('puzzle')">Puzzle</button>
+
+      <button class="game-btn" id="btn-associacao" onclick="showGame('associacao')">Associação</button>
+      <button class="game-btn" id="btn-snake" onclick="showGame('snake')">Apanha o Património</button>
+      <button class="game-btn" id="btn-quiz" onclick="showGame('quiz')">Quizz de Vila Verde</button>
+      <button class="game-btn" id="btn-sopa" onclick="showGame('sopa')">Sopa de Letras</button>
+    </div>
+
+    <!-- MEMÓRIA -->
+    <div id="memory-game" class="game-area active">
+      <div class="game-controls">
+        <div class="stats">
+          <span>Jogadas: <strong id="moves">0</strong></span> |
+          <span>Pares encontrados: <strong id="pairs">0/0</strong></span> |
+          <span>Pontos: <strong id="memory-score">0</strong></span>
+        </div>
+        <button class="control-btn" onclick="initMemoryGame()">Novo jogo</button>
+      </div>
+
+      <div class="memory-grid" id="memory-grid"></div>
+
+      <div class="success-message" id="memory-success">
+        Parabéns! Encontraste todos os pares.
+      </div>
+    </div>
+
+    <!-- PUZZLE -->
+    <div id="puzzle-game" class="game-area">
+      <div class="game-controls">
+        <div class="stats">
+          <span>Peças: <strong id="puzzle-placed">0/15</strong></span> |
+          <span>Movimentos: <strong id="puzzle-moves">0</strong></span>
+        </div>
+        <button class="control-btn" onclick="initPuzzle()">Novo puzzle</button>
+      </div>
+
+      <div class="pz-levels">
+        <button class="game-btn active" id="pz-lv15" onclick="puzzleLevel(15)">15 peças</button>
+        <button class="game-btn" id="pz-lv20" onclick="puzzleLevel(20)">20 peças</button>
+        <button class="game-btn" id="pz-lv30" onclick="puzzleLevel(30)">30 peças</button>
+      </div>
+
+      <div class="puzzle-container">
+        <p class="pz-pick-label">Escolhe a imagem:</p>
+        <div class="pz-pick" id="pz-pick"></div>
+
+        <div class="puzzle-preview">
+          <p>Imagem completa:</p>
+          <img id="puzzle-preview" src="" alt="Imagem completa">
+        </div>
+
+        <div class="pz-msg" id="pz-msg" aria-live="polite"></div>
+
+        <div id="pz-stage">
+          <div id="pz-board"></div>
+          <div id="pz-tray"></div>
+        </div>
+      </div>
+
+      <div class="success-message" id="puzzle-success">
+        Parabéns! Completaste o puzzle.
+      </div>
+    </div>
+
+
+
+    <!-- ASSOCIAÇÃO -->
+    <div id="associacao-game" class="game-area">
+      <div class="game-controls">
+        <div class="stats">
+          <span>Associações correctas: <strong id="assoc-score">0</strong>/<strong id="assoc-total">0</strong></span>
+        </div>
+        <button class="control-btn" onclick="initAssociacao()">Novo jogo</button>
+      </div>
+
+      <div class="assoc-wrap">
+        <p class="assoc-instructions">Associa as palavras às imagens.</p>
+
+        <div class="assoc-container">
+          <div class="assoc-images" id="assoc-images"></div>
+          <div class="assoc-phrases" id="assoc-phrases"></div>
+        </div>
+
+        <div class="success-message" id="assoc-success">
+          Parabéns! Concluíste todas as associações.
+        </div>
+      </div>
+    </div>
+
+    <!-- COBRA RURAL -->
+    <div id="snake-game" class="game-area">
+      <div class="snake-wrap">
+        <div class="snake-box" id="snakeBox">
+
+          <!-- Seleção de personagem (overlay dentro do jogo) -->
+          <div class="snake-overlay" id="snakeCharacterOverlay">
+            <h3>🌾 Escolhe o teu personagem 🌾</h3>
+            <div class="snake-characters">
+              <div class="snake-character" data-character="boy">
+                <div class="emoji">👦</div>
+                <p>Menino</p>
+              </div>
+              <div class="snake-character" data-character="girl">
+                <div class="emoji">👧</div>
+                <p>Menina</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Game over (overlay) -->
+          <div class="snake-overlay snake-gameover hidden" id="snakeGameOverOverlay">
+            <div class="panel">
+              <h3>😊 Fim do jogo!</h3>
+              <p>Pontuação: <strong id="snakeFinalScore">0</strong></p>
+              <p>Tamanho: <strong id="snakeFinalSize">1</strong></p>
+              <button class="snake-restart" onclick="snakeRestartGame()">Jogar novamente</button>
+            </div>
+          </div>
+
+          <div class="snake-header">
+            <h2>🎯 Apanha o Património</h2>
+            <p>Apanha os artefactos e cresce!</p>
+          </div>
+
+          <div class="snake-info">
+            <div class="snake-score">
+              <div>Pontos: <span id="snakeScore">0</span></div>
+              <div>Tamanho: <span id="snakeSize">1</span></div>
+            </div>
+
+            <div class="snake-top-controls">
+              <button class="snake-icon-btn" id="snakePauseBtn" onclick="snakeTogglePause()" title="Pausar/Continuar">⏸️</button>
+              <button class="snake-icon-btn" onclick="snakeRestartGame()" title="Reiniciar">🔄</button>
+            </div>
+          </div>
+
+          <canvas id="snakeCanvas" width="480" height="480"></canvas>
+
+          <div class="snake-controls">
+            <button class="snake-control-btn" id="snakeUp" onclick="snakeChangeDirection('up')">⬆️</button>
+            <button class="snake-control-btn" id="snakeLeft" onclick="snakeChangeDirection('left')">⬅️</button>
+            <button class="snake-control-btn" id="snakeRight" onclick="snakeChangeDirection('right')">➡️</button>
+            <button class="snake-control-btn" id="snakeDown" onclick="snakeChangeDirection('down')">⬇️</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <!-- JOGO DO QUIZZ -->
+    <div id="quiz-game" class="game-area">
+      <div class="game-controls">
+        <div class="stats">
+          <strong>Questão:</strong> <span id="quizCurrentQuestion">1</span>/<span id="quizTotalQuestions">10</span><br>
+          <strong>Pontuação:</strong> <span id="quizScore">0</span> pontos
+        </div>
+        <button class="control-btn" onclick="quizRestart()">🔄 Reiniciar</button>
+      </div>
+
+      <div class="quiz-container">
+        <div class="quiz-question-box">
+          <h3 id="quizQuestion">Pergunta aparecerá aqui</h3>
+        </div>
+
+        <div class="quiz-options" id="quizOptions">
+          <!-- Opções aparecem aqui -->
+        </div>
+
+        <div class="quiz-feedback hidden" id="quizFeedback">
+          <p id="quizFeedbackText"></p>
+          <button class="control-btn" onclick="quizNextQuestion()">Próxima Questão ➡️</button>
+        </div>
+
+        <div class="quiz-final hidden" id="quizFinal">
+          <h2>🎉 Quizz Concluído!</h2>
+          <p>Conseguiste <strong id="quizFinalScore">0</strong> pontos em <strong id="quizFinalTotal">10</strong> questões!</p>
+          <p id="quizFinalMessage"></p>
+          <button class="control-btn" onclick="quizRestart()">Jogar Novamente</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SOPA DE LETRAS -->
+    <div id="sopa-game" class="game-area">
+      <div class="game-controls">
+        <div class="stats">
+          Palavras encontradas: <strong><span id="sopaFoundCount">0</span> / <span id="sopaTotalWords">8</span></strong>
+        </div>
+        <button class="control-btn" onclick="sopaResetGame()">🔄 Novo Jogo</button>
+      </div>
+
+      <div class="word-search-container">
+        <div class="grid-container">
+          <div class="word-grid" id="sopaWordGrid"></div>
+        </div>
+
+        <div class="words-list">
+          <h3>Palavras a encontrar:</h3>
+          <div id="sopaWordsList"></div>
+        </div>
+      </div>
+
+      <div class="completion-message" id="sopaCompletionMessage">
+        <h2>🎉 Parabéns!</h2>
+        <p>Encontraste todas as palavras sobre o património rural!</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* =======================
+       ARTEFACTOS (imagens na mesma pasta do HTML)
+       Ajusta nomes se necessário.
+    ======================= */
+    const artefactos = [
+      { name: 'Carro de Brincar',        image: 'carrinho.png'  },
+      { name: 'Ferradura',           image: 'ferradura.png' },
+      { name: 'Lenço dos Namorados', image: 'lenco.png'     },
+      { name: 'Pião',                image: 'piao.png'      },
+      { name: 'Tear',                image: 'tear.png'      },
+      { name: 'Pote de Barro',       image: 'vaso.png'      },
+    ];
+
+    /* =======================
+       JOGO DA MEMÓRIA
+    ======================= */
+    let memoryCards = [];
+    let flippedCards = [];
+    let matchedPairs = 0;
+    let moves = 0;
+    let memoryScore = 0;
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function initMemoryGame() {
+      const totalPairs = artefactos.length;
+
+      memoryCards = shuffleArray([...artefactos, ...artefactos]);
+      flippedCards = [];
+      matchedPairs = 0;
+      moves = 0;
+      memoryScore = 0;
+
+      document.getElementById('moves').textContent = '0';
+      document.getElementById('pairs').textContent = `0/${totalPairs}`;
+      document.getElementById('memory-score').textContent = '0';
+      document.getElementById('memory-success').classList.remove('show');
+
+      const grid = document.getElementById('memory-grid');
+      grid.innerHTML = '';
+
+      memoryCards.forEach((artefacto, index) => {
+        const card = document.createElement('div');
+        card.className = 'memory-card';
+        card.dataset.index = index;
+        card.dataset.name = artefacto.name;
+
+        card.innerHTML = `
+          <div class="card-front">?</div>
+          <div class="card-back">
+            <img src="${artefacto.image}" alt="${artefacto.name}">
+          </div>
+        `;
+
+        card.onclick = () => flipCard(card, index);
+        grid.appendChild(card);
+      });
+    }
+
+    
+function flipCard(card, index) {
+  if (flippedCards.length >= 2) return;
+  if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+  card.classList.add('flipped');
+  flippedCards.push({ card, index, name: memoryCards[index].name });
+
+  if (flippedCards.length === 2) {
+    moves++;
+    document.getElementById('moves').textContent = moves;
+    setTimeout(checkMatch, 420);
+  }
+}
+
+
+    function checkMatch() {
+      const totalPairs = artefactos.length;
+      const [card1, card2] = flippedCards;
+
+      if (card1.name === card2.name) {
+        card1.card.classList.add('matched');
+        card2.card.classList.add('matched');
+
+        matchedPairs++;
+        memoryScore += 10;
+        document.getElementById('memory-score').textContent = memoryScore;
+        document.getElementById('pairs').textContent = `${matchedPairs}/${totalPairs}`;
+
+        if (matchedPairs === totalPairs) {
+          setTimeout(() => document.getElementById('memory-success').classList.add('show'), 300);
+        }
+      } else {
+        card1.card.classList.remove('flipped');
+        card2.card.classList.remove('flipped');
+      }
+
+      flippedCards = [];
+    }
+
+    /* =======================
+       PUZZLE (arrastar as peças para o sítio certo) — 15 / 20 / 30 peças
+    ======================= */
+    (function () {
+      const LEVELS = { 15: [5, 3], 20: [5, 4], 30: [6, 5] };  // [colunas, linhas]
+      let C = 5, R = 3, level = 15;
+      let filled = 0, puzzleMoves = 0, selId = -1, drag = null, curImage = '';
+      let curIdx = Math.floor(Math.random() * artefactos.length);
+      const pick = document.getElementById('pz-pick');
+      const board = document.getElementById('pz-board');
+      const tray  = document.getElementById('pz-tray');
+      const stage = document.getElementById('pz-stage');
+      const setMsg = t => { document.getElementById('pz-msg').textContent = t; };
+
+      function bgSize() { return (C * 100) + '% ' + (R * 100) + '%'; }
+      function bgPos(id) {
+        const c = id % C, r = Math.floor(id / C);
+        return (C > 1 ? c * 100 / (C - 1) : 0) + '% ' + (R > 1 ? r * 100 / (R - 1) : 0) + '%';
+      }
+      function paint(el, id) { el.style.backgroundSize = bgSize(); el.style.backgroundPosition = bgPos(id); }
+      function updateStats() {
+        document.getElementById('puzzle-placed').textContent = filled + '/' + (C * R);
+        document.getElementById('puzzle-moves').textContent = puzzleMoves;
+      }
+
+      function initPuzzle() {
+        const n = C * R;
+        const art = artefactos[curIdx];
+        curImage = art.image;
+        document.getElementById('puzzle-preview').src = curImage;
+        document.getElementById('puzzle-success').classList.remove('show');
+
+        filled = 0; puzzleMoves = 0; selId = -1; drag = null;
+        stage.style.setProperty('--img', "url('" + curImage + "')");
+        // largura/altura de cada peça: imagem 3:2 repartida em C x R
+        stage.style.setProperty('--ar', (1.5 * R / C).toFixed(4));
+
+        board.className = ''; board.innerHTML = '';
+        board.style.gridTemplateColumns = 'repeat(' + C + ', 1fr)';
+        board.style.gridTemplateRows = 'repeat(' + R + ', 1fr)';
+        tray.hidden = false; tray.className = 'n' + n; tray.innerHTML = '';
+
+        const ids = [];
+        for (let i = 0; i < n; i++) {
+          ids.push(i);
+          const s = document.createElement('button');
+          s.className = 'pz-slot'; s.dataset.id = i;
+          s.setAttribute('aria-label', 'Lugar da peça');
+          paint(s, i);
+          s.addEventListener('click', slotTap);
+          board.appendChild(s);
+        }
+        shuffleArray(ids).forEach(id => {
+          const d = document.createElement('div');
+          d.className = 'pz-piece'; d.dataset.id = id;
+          d.setAttribute('role', 'button'); d.setAttribute('aria-label', 'Peça');
+          paint(d, id);
+          d.style.setProperty('--rot', (Math.random() * 8 - 4).toFixed(1) + 'deg');
+          d.addEventListener('pointerdown', down);
+          d.addEventListener('pointermove', move);
+          d.addEventListener('pointerup', up);
+          d.addEventListener('pointercancel', cancel);
+          tray.appendChild(d);
+        });
+        updateStats();
+        setMsg('Arrasta cada peça para o lugar certo.');
+      }
+
+      function slotAt(x, y) {
+        const s = board.children;
+        for (let i = 0; i < s.length; i++) {
+          const r = s[i].getBoundingClientRect();
+          if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return s[i];
+        }
+        return null;
+      }
+      function clearHot() { Array.from(board.children).forEach(s => s.classList.remove('hot')); }
+      function select(id) {
+        selId = id;
+        Array.from(tray.children).forEach(p => p.classList.toggle('sel', +p.dataset.id === id));
+      }
+
+      function down(e) {
+        if (e.button > 0 || drag) return;
+        const el = e.currentTarget;
+        drag = { el, id: +el.dataset.id, x0: e.clientX, y0: e.clientY, moved: false, ghost: null, pid: e.pointerId, cx: 0, cy: 0 };
+        try { el.setPointerCapture(e.pointerId); } catch (x) {}
+        e.preventDefault();
+      }
+      function move(e) {
+        if (!drag || drag.pid !== e.pointerId) return;
+        if (!drag.moved) {
+          if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8) return;
+          drag.moved = true; select(-1);
+          const r = board.children[0].getBoundingClientRect();
+          drag.w = r.width; drag.h = r.height;
+          const g = document.createElement('div');
+          g.className = 'pz-ghost';
+          g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+          g.style.setProperty('--img', "url('" + curImage + "')");
+          paint(g, drag.id);
+          document.body.appendChild(g);
+          drag.ghost = g; drag.el.classList.add('drag');
+        }
+        const gx = e.clientX - drag.w / 2;
+        const gy = e.clientY - drag.h / 2 - (e.pointerType === 'touch' ? 40 : 0);
+        drag.ghost.style.transform = 'translate(' + gx + 'px,' + gy + 'px) scale(1.04)';
+        drag.cx = gx + drag.w / 2; drag.cy = gy + drag.h / 2;
+        const s = slotAt(drag.cx, drag.cy);
+        clearHot();
+        if (s && !s.classList.contains('full')) s.classList.add('hot');
+      }
+      function end(e) {
+        if (!drag || drag.pid !== e.pointerId) return null;
+        const d = drag; drag = null;
+        try { d.el.releasePointerCapture(d.pid); } catch (x) {}
+        clearHot();
+        if (d.ghost) d.ghost.remove();
+        d.el.classList.remove('drag');
+        return d;
+      }
+      function up(e) {
+        const d = end(e); if (!d) return;
+        if (!d.moved) {
+          select(selId === d.id ? -1 : d.id);
+          if (selId >= 0) setMsg('Agora toca no lugar certo.');
+          return;
+        }
+        const s = slotAt(d.cx, d.cy);
+        if (s) place(d.el, s);
+      }
+      function cancel(e) { end(e); }
+
+      function slotTap(e) {
+        const s = e.currentTarget;
+        if (selId < 0 || s.classList.contains('full')) return;
+        const el = tray.querySelector('.pz-piece[data-id="' + selId + '"]');
+        if (el) place(el, s);
+      }
+
+      function place(el, slot) {
+        const id = +el.dataset.id;
+        if (slot.classList.contains('full')) { setMsg('Esse lugar já está ocupado.'); return; }
+        puzzleMoves++;
+        if (+slot.dataset.id === id) {
+          slot.classList.add('full'); el.remove(); filled++; selId = -1;
+          updateStats();
+          if (filled === C * R) {
+            setMsg('');
+            tray.hidden = true; board.classList.add('fin');
+            setTimeout(() => document.getElementById('puzzle-success').classList.add('show'), 250);
+          } else {
+            setMsg(['Muito bem!', 'Perfeito!', 'Encaixou!', 'Boa!'][Math.floor(Math.random() * 4)]);
+          }
+        } else {
+          updateStats();
+          el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+          setMsg('Quase! Tenta noutro lugar.');
+        }
+      }
+
+      function puzzleLevel(n) {
+        level = n; C = LEVELS[n][0]; R = LEVELS[n][1];
+        Object.keys(LEVELS).forEach(k => document.getElementById('pz-lv' + k).classList.toggle('active', +k === n));
+        initPuzzle();
+      }
+
+      // Círculos com as fotos para escolher a imagem do puzzle
+      artefactos.forEach((a, i) => {
+        const b = document.createElement('button');
+        b.style.backgroundImage = "url('" + a.image + "')";
+        b.title = a.name;
+        b.setAttribute('aria-label', a.name);
+        b.setAttribute('aria-pressed', i === curIdx ? 'true' : 'false');
+        b.onclick = () => {
+          curIdx = i;
+          Array.from(pick.children).forEach((x, j) => x.setAttribute('aria-pressed', j === i ? 'true' : 'false'));
+          initPuzzle();
+        };
+        pick.appendChild(b);
+      });
+
+      window.initPuzzle = initPuzzle;
+      window.puzzleLevel = puzzleLevel;
+    })();
+
+
+
+    /* =======================
+       ASSOCIAÇÃO (imagem + frase)   Drag & Drop
+    ======================= */
+    const associacoes = [
+      {
+        id: 'carrinho',
+        titulo: 'Carro de Brincar',
+        image: 'carrinho.png',
+        text: 'Brinquedo que se empurra para andar.'
+      },
+      {
+        id: 'ferradura',
+        titulo: 'Ferradura',
+        image: 'ferradura.png',
+        text: 'Colocava-se no casco do cavalo.'
+      },
+      {
+        id: 'lenco',
+        titulo: 'Lenço dos Namorados',
+        image: 'lenco.png',
+        text: 'Prenda que era dada entre namorados.'
+      },
+      {
+        id: 'piao',
+        titulo: 'Pião',
+        image: 'piao.png',
+        text: 'Brinquedo que gira no chão.'
+      },
+      {
+        id: 'tear',
+        titulo: 'Tear',
+        image: 'tear.png',
+        text: 'Servia para fazer tecidos.'
+      },
+      {
+        id: 'vaso',
+        titulo: 'Pote de Barro',
+        image: 'vaso.png',
+        text: 'Recipiente de barro para cozinhar.'
+      },
+    ];
+
+    let assocCorrect = 0;
+    let assocSelectedPhraseEl = null;
+
+    function initAssociacao(){
+      assocCorrect = 0;
+      assocSelectedPhraseEl = null;
+
+      const total = associacoes.length;
+      document.getElementById('assoc-score').textContent = '0';
+      document.getElementById('assoc-total').textContent = String(total);
+      document.getElementById('assoc-success').classList.remove('show');
+
+      const imgCol = document.getElementById('assoc-images');
+      const phraseCol = document.getElementById('assoc-phrases');
+      imgCol.innerHTML = '';
+      phraseCol.innerHTML = '';
+
+      const imgs = shuffleArray(associacoes);
+      const phrases = shuffleArray(associacoes);
+
+      function clearSelectedPhrase(){
+        if (assocSelectedPhraseEl){
+          assocSelectedPhraseEl.classList.remove('selected');
+          assocSelectedPhraseEl = null;
+        }
+      }
+
+      function returnToHome(phraseEl){
+        const homeIndex = Number(phraseEl.dataset.homeIndex || 0);
+        const homeParent = document.getElementById('assoc-phrases');
+        if (!homeParent) return;
+
+        // Se a frase já estiver na coluna das frases, apenas repõe (aprox.) a posição
+        if (phraseEl.parentElement !== homeParent){
+          homeParent.appendChild(phraseEl);
+        }
+
+        const children = Array.from(homeParent.children);
+        // Recoloca antes do elemento que actualmente ocupa a posição original, se existir
+        const target = children[homeIndex];
+        if (target && target !== phraseEl){
+          homeParent.insertBefore(phraseEl, target);
+        }
+      }
+
+      function tryPlacePhraseOnZone(phraseEl, zone){
+        if (!phraseEl || !zone) return;
+        if (zone.querySelector('.assoc-phrase')) return; // já preenchida
+
+        const draggedId = phraseEl.dataset.id;
+        if (!draggedId) return;
+
+        if (draggedId === zone.dataset.id){
+          const ph = zone.querySelector('.assoc-placeholder');
+          if (ph) ph.remove();
+
+          phraseEl.classList.remove('selected');
+          phraseEl.classList.add('correct');
+          phraseEl.setAttribute('draggable', 'false');
+          phraseEl.style.cursor = 'default';
+          zone.appendChild(phraseEl);
+
+          assocCorrect++;
+          document.getElementById('assoc-score').textContent = String(assocCorrect);
+
+          clearSelectedPhrase();
+
+          if (assocCorrect === total){
+            setTimeout(() => document.getElementById('assoc-success').classList.add('show'), 250);
+          }
+        } else {
+          phraseEl.classList.add('wrong');
+          returnToHome(phraseEl);
+          clearSelectedPhrase();
+          setTimeout(() => phraseEl.classList.remove('wrong'), 650);
+        }
+      }
+
+      // Coluna das imagens + zonas de largar
+      imgs.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'assoc-card';
+        card.innerHTML = `
+          <div class="assoc-image-top">
+            <div>
+              <div class="assoc-image-title">${item.titulo}</div>
+              <div class="assoc-dropzone" data-id="${item.id}">
+                <div class="assoc-placeholder">Arrasta aqui a frase correcta</div>
+              </div>
+            </div>
+            <img src="${item.image}" alt="${item.titulo}">
+          </div>
+        `;
+
+        const zone = card.querySelector('.assoc-dropzone');
+
+        // Clique (alternativa ao arrastar, útil em tablets/telemóveis)
+        zone.addEventListener('click', () => {
+          if (assocSelectedPhraseEl){
+            tryPlacePhraseOnZone(assocSelectedPhraseEl, zone);
+          }
+        });
+
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('hover');
+        });
+
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('hover');
+        });
+
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('hover');
+
+          const draggedId = e.dataTransfer.getData('text/plain');
+          const phraseEl = document.querySelector(`.assoc-phrase[data-id="${draggedId}"]`);
+          if (!phraseEl) return;
+          tryPlacePhraseOnZone(phraseEl, zone);
+        });
+
+        imgCol.appendChild(card);
+      });
+
+      // Coluna das frases arrastáveis
+      phrases.forEach(item => {
+        const phrase = document.createElement('div');
+        phrase.className = 'assoc-phrase';
+        phrase.textContent = item.text;
+        phrase.setAttribute('draggable', 'true');
+        phrase.dataset.id = item.id;
+        phrase.dataset.homeIndex = String(phraseCol.children.length);
+
+        // Clique (seleccionar/deseleccionar)
+        phrase.addEventListener('click', () => {
+          if (phrase.classList.contains('correct')) return;
+          if (assocSelectedPhraseEl === phrase){
+            phrase.classList.remove('selected');
+            assocSelectedPhraseEl = null;
+            return;
+          }
+          // limpar selecção anterior
+          if (assocSelectedPhraseEl){
+            assocSelectedPhraseEl.classList.remove('selected');
+          }
+          assocSelectedPhraseEl = phrase;
+          phrase.classList.add('selected');
+        });
+
+        phrase.addEventListener('dragstart', (e) => {
+          if (phrase.classList.contains('correct')) {
+            e.preventDefault();
+            return;
+          }
+          // ao começar a arrastar, desmarca selecção visual
+          if (assocSelectedPhraseEl === phrase){
+            phrase.classList.remove('selected');
+            assocSelectedPhraseEl = null;
+          }
+          e.dataTransfer.setData('text/plain', item.id);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        phraseCol.appendChild(phrase);
+      });
+    }
+
+
+    /* =======================
+       NAVEGAÇÃO ENTRE JOGOS
+    ======================= */
+    function showGame(game) {
+      document.querySelectorAll('.game-area').forEach(area => area.classList.remove('active'));
+      document.querySelectorAll('.game-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (game === 'memory') {
+        document.getElementById('memory-game').classList.add('active');
+        document.getElementById('btn-memory').classList.add('active');
+      } else if (game === 'puzzle') {
+        document.getElementById('puzzle-game').classList.add('active');
+        document.getElementById('btn-puzzle').classList.add('active');
+      } else if (game === 'associacao') {
+        document.getElementById('associacao-game').classList.add('active');
+        document.getElementById('btn-associacao').classList.add('active');
+      } else if (game === 'snake') {
+        document.getElementById('snake-game').classList.add('active');
+        document.getElementById('btn-snake').classList.add('active');
+        snakeEnsureRunning();
+      } else if (game === 'quiz') {
+        document.getElementById('quiz-game').classList.add('active');
+        document.getElementById('btn-quiz').classList.add('active');
+      } else if (game === 'sopa') {
+        document.getElementById('sopa-game').classList.add('active');
+        document.getElementById('btn-sopa').classList.add('active');
+      }
+    }
+
+    /* =======================
+       COBRA RURAL (JS)
+    ======================= */
+    const snakeCanvas = document.getElementById('snakeCanvas');
+    const snakeCtx = snakeCanvas.getContext('2d');
+
+    const snakeCharacterOverlay = document.getElementById('snakeCharacterOverlay');
+    const snakeGameOverOverlay = document.getElementById('snakeGameOverOverlay');
+
+    const gridSize = 40;
+    let snakeCanvasSize = 480;
+    let tileCount = Math.floor(snakeCanvasSize / gridSize);
+
+    let snake = [{x: 10, y: 10}];
+    let dx = 0;
+    let dy = 0;
+    let snakeScore = 0;
+    let snakeGameOver = false;
+    let snakeStarted = false;
+    let snakePaused = false;
+    let playerEmoji = '👦';
+
+    const foodTypes = [
+      {name: 'carrinho', emoji: '🚙'},
+      {name: 'ferradura', emoji: '🐴'},
+      {name: 'lenco', emoji: '❤️'},
+      {name: 'piao', emoji: '🎯'},
+      {name: 'tear', emoji: '🧶'},
+      {name: 'vaso', emoji: '🏺'}
+    ];
+
+    let food = {x: 15, y: 15, type: 'carrinho', emoji: '🚙'};
+
+    // Seleção de personagem
+    document.querySelectorAll('.snake-character').forEach(option => {
+      option.addEventListener('click', function() {
+        const character = this.getAttribute('data-character');
+        playerEmoji = character === 'boy' ? '👦' : '👧';
+
+        snakeCharacterOverlay.classList.add('hidden');
+        snakeStarted = true;
+        snakePaused = false;
+        dx = 0; dy = 0; // começa parado até escolher direção
+        snakeEnsureRunning();
+      });
+    });
+
+    // Controlo por teclado (só quando o jogo da cobra está activo)
+    document.addEventListener('keydown', (e) => {
+      if (!isSnakeVisible()) return;
+      if (!snakeStarted || snakeGameOver) return;
+
+      switch(e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          if (dy === 0) { dx = 0; dy = -1; }
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          if (dy === 0) { dx = 0; dy = 1; }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (dx === 0) { dx = -1; dy = 0; }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (dx === 0) { dx = 1; dy = 0; }
+          break;
+      }
+    });
+
+    function snakeChangeDirection(direction) {
+      if (!snakeStarted || snakeGameOver) return;
+
+      switch(direction) {
+        case 'up':
+          if (dy === 0) { dx = 0; dy = -1; }
+          break;
+        case 'down':
+          if (dy === 0) { dx = 0; dy = 1; }
+          break;
+        case 'left':
+          if (dx === 0) { dx = -1; dy = 0; }
+          break;
+        case 'right':
+          if (dx === 0) { dx = 1; dy = 0; }
+          break;
+      }
+    }
+
+    function snakeGenerateFood() {
+      let newFood = null;
+      while (!newFood) {
+        const randomType = foodTypes[Math.floor(Math.random() * foodTypes.length)];
+        const candidate = {
+          x: Math.floor(Math.random() * tileCount),
+          y: Math.floor(Math.random() * tileCount),
+          type: randomType.name,
+          emoji: randomType.emoji
+        };
+        const hitsSnake = snake.some(seg => seg.x === candidate.x && seg.y === candidate.y);
+        if (!hitsSnake) newFood = candidate;
+      }
+      food = newFood;
+    }
+
+    function snakeResizeCanvas() {
+      const rect = snakeCanvas.getBoundingClientRect();
+      const size = Math.floor(Math.min(rect.width, rect.height));
+      if (!size) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      snakeCanvasSize = size;
+      snakeCanvas.width = Math.round(size * dpr);
+      snakeCanvas.height = Math.round(size * dpr);
+      snakeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      tileCount = Math.max(1, Math.floor(snakeCanvasSize / gridSize));
+    }
+
+    function snakeDrawGame() {
+      // Fundo
+      snakeCtx.fillStyle = 'white';
+      snakeCtx.fillRect(0, 0, snakeCanvasSize, snakeCanvasSize);
+
+      // Grade sutil
+      snakeCtx.strokeStyle = '#F5F5F5';
+      snakeCtx.lineWidth = 1;
+      for (let i = 0; i <= tileCount; i++) {
+        snakeCtx.beginPath();
+        snakeCtx.moveTo(i * gridSize, 0);
+        snakeCtx.lineTo(i * gridSize, snakeCanvasSize);
+        snakeCtx.stroke();
+
+        snakeCtx.beginPath();
+        snakeCtx.moveTo(0, i * gridSize);
+        snakeCtx.lineTo(snakeCanvasSize, i * gridSize);
+        snakeCtx.stroke();
+      }
+
+      // Comida
+      snakeCtx.font = `${gridSize - 4}px Arial`;
+      snakeCtx.textAlign = 'center';
+      snakeCtx.textBaseline = 'middle';
+      snakeCtx.fillText(
+        food.emoji,
+        food.x * gridSize + gridSize / 2,
+        food.y * gridSize + gridSize / 2
+      );
+
+      // Cobra
+      snake.forEach((segment, index) => {
+        if (index === 0) {
+          snakeCtx.font = `${gridSize - 2}px Arial`;
+          snakeCtx.fillText(
+            playerEmoji,
+            segment.x * gridSize + gridSize / 2,
+            segment.y * gridSize + gridSize / 2
+          );
+        } else {
+          snakeCtx.fillStyle = '#FFD700';
+          snakeCtx.beginPath();
+          snakeCtx.arc(
+            segment.x * gridSize + gridSize / 2,
+            segment.y * gridSize + gridSize / 2,
+            gridSize / 3,
+            0,
+            Math.PI * 2
+          );
+          snakeCtx.fill();
+        }
+      });
+    }
+
+    function snakeMove() {
+      if (dx === 0 && dy === 0) return;
+
+      const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+      // atravessa paredes
+      if (head.x < 0) head.x = tileCount - 1;
+      if (head.x >= tileCount) head.x = 0;
+      if (head.y < 0) head.y = tileCount - 1;
+      if (head.y >= tileCount) head.y = 0;
+
+      // colisão consigo
+      for (let segment of snake) {
+        if (head.x === segment.x && head.y === segment.y) {
+          snakeEndGame();
+          return;
+        }
+      }
+
+      snake.unshift(head);
+
+      // comer
+      if (head.x === food.x && head.y === food.y) {
+        snakeScore += 10;
+        document.getElementById('snakeScore').textContent = snakeScore;
+        document.getElementById('snakeSize').textContent = snake.length;
+        snakeGenerateFood();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function snakeEndGame() {
+      snakeGameOver = true;
+      document.getElementById('snakeFinalScore').textContent = snakeScore;
+      document.getElementById('snakeFinalSize').textContent = snake.length;
+      snakeGameOverOverlay.classList.remove('hidden');
+    }
+
+    function snakeRestartGame() {
+      snake = [{x: 6, y: 6}];
+      dx = 0;
+      dy = 0;
+      snakeScore = 0;
+      snakeGameOver = false;
+      snakePaused = false;
+      document.getElementById('snakeScore').textContent = '0';
+      document.getElementById('snakeSize').textContent = '1';
+      document.getElementById('snakePauseBtn').textContent = '⏸️';
+      document.getElementById('snakePauseBtn').title = 'Pausar/Continuar';
+      snakeGameOverOverlay.classList.add('hidden');
+      snakeGenerateFood();
+
+      // Se ainda não escolheu personagem, volta ao overlay de escolha
+      if (!snakeStarted) {
+        snakeCharacterOverlay.classList.remove('hidden');
+      }
+
+      snakeEnsureRunning();
+    }
+
+    function snakeTogglePause() {
+      if (!snakeStarted || snakeGameOver) return;
+
+      snakePaused = !snakePaused;
+      const btn = document.getElementById('snakePauseBtn');
+
+      if (snakePaused) {
+        btn.textContent = '▶️';
+        btn.title = 'Continuar';
+      } else {
+        btn.textContent = '⏸️';
+        btn.title = 'Pausar/Continuar';
+        snakeEnsureRunning();
+      }
+    }
+
+    function isSnakeVisible() {
+      const area = document.getElementById('snake-game');
+      return area.classList.contains('active');
+    }
+
+    let snakeLastTime = 0;
+    const snakeSpeed = 200; // ms entre movimentos
+    let snakeRAF = null;
+
+    function snakeLoop(currentTime = 0) {
+      // Se não estiver visível, não avança (mas mantém pronto)
+      if (!isSnakeVisible()) {
+        snakeRAF = null;
+        return;
+      }
+
+      if (!snakeGameOver) {
+        // desenha sempre
+        if (!snakePaused && snakeStarted && (currentTime - snakeLastTime >= snakeSpeed)) {
+          snakeMove();
+          snakeLastTime = currentTime;
+        }
+        snakeDrawGame();
+      }
+
+      snakeRAF = requestAnimationFrame(snakeLoop);
+    }
+
+    function snakeEnsureRunning() {
+      if (snakeRAF === null) {
+        snakeRAF = requestAnimationFrame(snakeLoop);
+      }
+    }
+
+    /* =======================
+       JOGO DO QUIZZ
+    ======================= */
+    const quizQuestions = [
+      {
+        question: "O poeta Sá de Miranda viveu numa freguesia de Vila Verde. Sabes em que freguesia viveu?",
+        options: [
+          "Fiscal",
+          "Duas Igrejas",
+          "Goães",
+          "Soutelo"
+        ],
+        correct: 1,
+        explanation: "Sá de Miranda viveu na freguesia de Duas Igrejas, em Vila Verde, onde desenvolveu grande parte da sua obra poética."
+      },
+      {
+        question: "Qual destes monumentos é muito conhecido em Vila Verde?",
+        options: [
+          "Santuário de Nossa Senhora da Peneda",
+          "Mosteiro de Tibães",
+          "Santuário da Nossa Senhora do Alívio",
+          "Mosteiro de Rendufe"
+        ],
+        correct: 2,
+        explanation: "O Santuário da Nossa Senhora do Alívio é um dos monumentos mais emblemáticos de Vila Verde."
+      },
+      {
+        question: "Qual é o rio que nasce no concelho de Vila Verde?",
+        options: [
+          "Rio Cávado",
+          "Rio Homem",
+          "Rio Neiva",
+          "Rio Ave"
+        ],
+        correct: 2,
+        explanation: "O Rio Neiva nasce no concelho de Vila Verde e é um importante curso de água da região."
+      },
+      {
+        question: "Quantas freguesias tem o concelho de Vila Verde?",
+        options: [
+          "10",
+          "25",
+          "33",
+          "40"
+        ],
+        correct: 2,
+        explanation: "O concelho de Vila Verde tem 33 freguesias, cada uma com a sua história e tradições próprias."
+      },
+      {
+        question: "Sabes o nome da tua freguesia?",
+        options: [
+          "União de Freguesias do Vade",
+          "União das Freguesias de Oriz (Santa Marinha) e Oriz (São Miguel)",
+          "Cabanelas",
+          "Aboim da Nóbrega e Gondomar"
+        ],
+        correct: 1,
+        explanation: "A União das Freguesias de Oriz (Santa Marinha) e Oriz (São Miguel) faz parte do concelho de Vila Verde."
+      },
+      {
+        question: "O que se celebra tradicionalmente em Vila Verde no mês de fevereiro?",
+        options: [
+          "Festa das Colheitas",
+          "Namorar Portugal",
+          "Romaria de Nossa Senhora do Bom Despacho",
+          "Feira Quinhentista"
+        ],
+        correct: 1,
+        explanation: "Namorar Portugal é uma celebração tradicional que ocorre em fevereiro em Vila Verde, promovendo as tradições locais."
+      },
+      {
+        question: "O que é o 'Namorar Portugal'?",
+        options: [
+          "Um festival de música",
+          "Um concurso de poesia",
+          "Uma marca que promove o Lenço dos Namorados",
+          "Um programa de intercâmbio escolar"
+        ],
+        correct: 2,
+        explanation: "Namorar Portugal é uma marca que promove o Lenço dos Namorados e as tradições associadas a esta arte minhota."
+      },
+      {
+        question: "O Lenço dos Namorados é tradicionalmente feito com:",
+        options: [
+          "Madeira",
+          "Lã",
+          "Linho e bordado à mão",
+          "Papel colorido"
+        ],
+        correct: 2,
+        explanation: "O Lenço dos Namorados é tradicionalmente feito de linho e bordado à mão pelas jovens, sendo uma expressão de amor e habilidade artesanal."
+      },
+      {
+        question: "Qual destas instituições promove atividades educativas em Vila Verde?",
+        options: [
+          "Casa do Conhecimento",
+          "Museu dos Coches",
+          "Oceanário de Lisboa",
+          "Fundação Gulbenkian"
+        ],
+        correct: 0,
+        explanation: "A Casa do Conhecimento é uma instituição de Vila Verde dedicada à promoção de atividades educativas e culturais."
+      },
+      {
+        question: "Que temática é explorada no Centro Interpretativo do Artesanato em Cerâmica, na Vila de Prado?",
+        options: [
+          "Tecelagem",
+          "Cerâmica",
+          "Lenços de Namorados",
+          "Automóveis"
+        ],
+        correct: 1,
+        explanation: "O Centro Interpretativo do Artesanato em Cerâmica, localizado na Vila de Prado, dedica-se à arte e tradição da cerâmica."
+      },
+      {
+        question: "Que temática é explorada na Casa do Brinquedo e da Brincadeira, em Esqueiros?",
+        options: [
+          "Tecelagem",
+          "Cerâmica",
+          "Lenços de Namorados",
+          "Brinquedos"
+        ],
+        correct: 3,
+        explanation: "A Casa do Brinquedo e da Brincadeira, em Esqueiros, é dedicada ao património lúdico e aos brinquedos tradicionais."
+      },
+      {
+        question: "Que matéria é usada no Museu do Linho, em Marrancos?",
+        options: [
+          "Ferro",
+          "Barro",
+          "Linho",
+          "Madeira"
+        ],
+        correct: 2,
+        explanation: "O Museu do Linho, em Marrancos, dedica-se à preservação e divulgação da cultura do linho e das suas transformações artesanais."
+      },
+      {
+        question: "Como se chama a Biblioteca Municipal de Vila Verde?",
+        options: [
+          "Biblioteca Municipal Francisco de Sá de Miranda",
+          "Biblioteca Municipal José Saramago",
+          "Biblioteca Municipal Prof. Marcelo Rebelo de Sousa",
+          "Biblioteca Municipal Professor Machado Vilela"
+        ],
+        correct: 3,
+        explanation: "A Biblioteca Municipal de Vila Verde tem o nome de Professor Machado Vilela, em homenagem a esta figura local."
+      }
+    ];
+
+    let currentQuestionIndex = 0;
+    let quizScore = 0;
+    let selectedAnswer = null;
+
+    function initQuiz() {
+      quizRestart();
+    }
+
+    function quizRestart() {
+      currentQuestionIndex = 0;
+      quizScore = 0;
+      selectedAnswer = null;
+      
+      document.getElementById('quizScore').textContent = '0';
+      document.getElementById('quizTotalQuestions').textContent = quizQuestions.length;
+      document.getElementById('quizFeedback').classList.add('hidden');
+      document.getElementById('quizFinal').classList.add('hidden');
+      
+      quizLoadQuestion();
+    }
+
+    function quizLoadQuestion() {
+      if (currentQuestionIndex >= quizQuestions.length) {
+        quizShowFinal();
+        return;
+      }
+
+      const question = quizQuestions[currentQuestionIndex];
+      const optionsContainer = document.getElementById('quizOptions');
+      
+      document.getElementById('quizCurrentQuestion').textContent = currentQuestionIndex + 1;
+      document.getElementById('quizQuestion').textContent = question.question;
+      document.getElementById('quizFeedback').classList.add('hidden');
+      
+      optionsContainer.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D'];
+      
+      question.options.forEach((option, index) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'quiz-option';
+        optionDiv.innerHTML = `
+          <span class="quiz-option-letter">${letters[index]}</span>
+          <span>${option}</span>
+        `;
+        optionDiv.onclick = () => quizSelectAnswer(index);
+        optionsContainer.appendChild(optionDiv);
+      });
+      
+      selectedAnswer = null;
+    }
+
+    function quizSelectAnswer(answerIndex) {
+      if (selectedAnswer !== null) return;
+      
+      selectedAnswer = answerIndex;
+      const question = quizQuestions[currentQuestionIndex];
+      const options = document.querySelectorAll('.quiz-option');
+      const feedbackDiv = document.getElementById('quizFeedback');
+      const feedbackText = document.getElementById('quizFeedbackText');
+      
+      options.forEach(option => {
+        option.classList.add('quiz-option-disabled');
+      });
+      
+      if (answerIndex === question.correct) {
+        options[answerIndex].classList.add('quiz-option-correct');
+        quizScore += 10;
+        document.getElementById('quizScore').textContent = quizScore;
+        
+        feedbackDiv.classList.remove('hidden', 'incorrect');
+        feedbackDiv.classList.add('correct');
+        feedbackText.innerHTML = `<strong>✓ Correcto!</strong><br>${question.explanation}`;
+      } else {
+        options[answerIndex].classList.add('quiz-option-incorrect');
+        options[question.correct].classList.add('quiz-option-correct');
+        
+        feedbackDiv.classList.remove('hidden', 'correct');
+        feedbackDiv.classList.add('incorrect');
+        feedbackText.innerHTML = `<strong>✗ Incorrecto!</strong><br>${question.explanation}`;
+      }
+      
+      feedbackDiv.classList.remove('hidden');
+    }
+
+    function quizNextQuestion() {
+      currentQuestionIndex++;
+      quizLoadQuestion();
+    }
+
+    function quizShowFinal() {
+      document.getElementById('quizOptions').innerHTML = '';
+      document.getElementById('quizQuestion').textContent = '';
+      document.getElementById('quizFeedback').classList.add('hidden');
+      
+      const finalDiv = document.getElementById('quizFinal');
+      const finalScore = document.getElementById('quizFinalScore');
+      const finalTotal = document.getElementById('quizFinalTotal');
+      const finalMessage = document.getElementById('quizFinalMessage');
+      
+      finalScore.textContent = quizScore;
+      finalTotal.textContent = quizQuestions.length;
+      
+      const percentage = (quizScore / (quizQuestions.length * 10)) * 100;
+      
+      if (percentage === 100) {
+        finalMessage.textContent = '🌟 Perfeito! És um verdadeiro especialista no mundo rural português!';
+      } else if (percentage >= 80) {
+        finalMessage.textContent = '🎉 Excelente! Conheces muito bem as tradições rurais!';
+      } else if (percentage >= 60) {
+        finalMessage.textContent = '👏 Muito bem! Tens bons conhecimentos sobre o mundo rural!';
+      } else if (percentage >= 40) {
+        finalMessage.textContent = '😊 Não está mal! Continua a explorar as tradições portuguesas!';
+      } else {
+        finalMessage.textContent = '💪 Podes melhorar! Tenta novamente e aprende mais sobre o mundo rural!';
+      }
+      
+      finalDiv.classList.remove('hidden');
+    }
+
+
+    /* =======================
+       SOPA DE LETRAS
+    ======================= */
+    const SOPA_WORDS = [
+      'PATRIMONIO',
+      'RURAL',
+      'LINHO',
+      'BRINQUEDO',
+      'LENCO',
+      'CULTURA',
+      'CONHECIMENTO',
+      'FERRADURA'
+    ];
+
+    const SOPA_GRID_SIZE = 12;
+    let sopaGrid = [];
+    let sopaWordsPlaced = [];
+    let sopaSelectedCells = [];
+    let sopaFoundWords = new Set();
+    let sopaIsSelecting = false;
+
+    function sopaCreateGrid() {
+      const wordsForPlacement = [...SOPA_WORDS].sort((a, b) => b.length - a.length);
+      const maxRegenerations = 80; // garante que todas entram
+      const maxAttemptsPerWord = 800;
+
+      for (let regen = 0; regen < maxRegenerations; regen++) {
+        sopaGrid = Array(SOPA_GRID_SIZE).fill(null).map(() => Array(SOPA_GRID_SIZE).fill(''));
+        sopaWordsPlaced = [];
+        sopaFoundWords.clear();
+
+        let allPlaced = true;
+
+        for (const word of wordsForPlacement) {
+          let placed = false;
+          let attempts = 0;
+
+          while (!placed && attempts < maxAttemptsPerWord) {
+            const direction = Math.floor(Math.random() * 2); // 2 direcções: só horizontal e vertical para a frente
+            const row = Math.floor(Math.random() * SOPA_GRID_SIZE);
+            const col = Math.floor(Math.random() * SOPA_GRID_SIZE);
+
+            if (sopaCanPlaceWord(word, row, col, direction)) {
+              sopaPlaceWord(word, row, col, direction);
+              placed = true;
+            }
+            attempts++;
+          }
+
+          if (!placed) {
+            allPlaced = false;
+            break; // recomeça a grelha
+          }
+        }
+
+        if (allPlaced) {
+          // preencher vazios
+          for (let i = 0; i < SOPA_GRID_SIZE; i++) {
+            for (let j = 0; j < SOPA_GRID_SIZE; j++) {
+              if (sopaGrid[i][j] === '') {
+                sopaGrid[i][j] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+              }
+            }
+          }
+          return;
+        }
+      }
+
+      // Fallback muito improvável: pelo menos não deixa o jogo preso
+      console.warn('Sopa de letras: não foi possível colocar todas as palavras após várias tentativas.');
+      for (let i = 0; i < SOPA_GRID_SIZE; i++) {
+        for (let j = 0; j < SOPA_GRID_SIZE; j++) {
+          if (sopaGrid[i][j] === '') {
+            sopaGrid[i][j] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+          }
+        }
+      }
+    }
+
+    function sopaCanPlaceWord(word, row, col, direction) {
+      const dirs = [
+        [0, 1],
+        [1, 0]
+      ];
+
+      const [dRow, dCol] = dirs[direction];
+
+      for (let i = 0; i < word.length; i++) {
+        const newRow = row + (dRow * i);
+        const newCol = col + (dCol * i);
+
+        if (newRow < 0 || newRow >= SOPA_GRID_SIZE || newCol < 0 || newCol >= SOPA_GRID_SIZE) {
+          return false;
+        }
+
+        if (sopaGrid[newRow][newCol] !== '' && sopaGrid[newRow][newCol] !== word[i]) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function sopaPlaceWord(word, row, col, direction) {
+      const dirs = [
+        [0, 1],
+        [1, 0]
+      ];
+
+      const [dRow, dCol] = dirs[direction];
+      const positions = [];
+
+      for (let i = 0; i < word.length; i++) {
+        const newRow = row + (dRow * i);
+        const newCol = col + (dCol * i);
+        sopaGrid[newRow][newCol] = word[i];
+        positions.push({ row: newRow, col: newCol });
+      }
+
+      sopaWordsPlaced.push({ word, positions });
+    }
+
+    function sopaRenderGrid() {
+      const gridElement = document.getElementById('sopaWordGrid');
+      if (!gridElement) return;
+
+      gridElement.innerHTML = '';
+
+      for (let i = 0; i < SOPA_GRID_SIZE; i++) {
+        for (let j = 0; j < SOPA_GRID_SIZE; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell';
+          cell.textContent = sopaGrid[i][j];
+          cell.dataset.row = String(i);
+          cell.dataset.col = String(j);
+
+          cell.addEventListener('mousedown', sopaStartSelection);
+          cell.addEventListener('mouseenter', sopaContinueSelection);
+          cell.addEventListener('mouseup', sopaEndSelection);
+
+          cell.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            sopaStartSelection.call(cell, e);
+          });
+          cell.addEventListener('touchmove', sopaHandleTouchMove);
+          cell.addEventListener('touchend', sopaEndSelection);
+
+          gridElement.appendChild(cell);
+        }
+      }
+
+      document.addEventListener('mouseup', sopaEndSelection);
+    }
+
+    function sopaHandleTouchMove(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (!touch) return;
+
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (element && element.classList.contains('grid-cell')) {
+        sopaContinueSelection.call(element, e);
+      }
+    }
+
+    function sopaStartSelection(e) {
+      e.preventDefault();
+      sopaIsSelecting = true;
+      sopaSelectedCells = [];
+      sopaClearSelection();
+
+      const row = parseInt(this.dataset.row, 10);
+      const col = parseInt(this.dataset.col, 10);
+
+      sopaSelectedCells.push({ row, col, element: this });
+      this.classList.add('selected');
+    }
+
+    function sopaContinueSelection(e) {
+      if (!sopaIsSelecting) return;
+
+      const row = parseInt(this.dataset.row, 10);
+      const col = parseInt(this.dataset.col, 10);
+
+      if (sopaSelectedCells.length > 0) {
+        const lastCell = sopaSelectedCells[sopaSelectedCells.length - 1];
+
+        const alreadySelected = sopaSelectedCells.some(cell => cell.row === row && cell.col === col);
+        if (alreadySelected) return;
+
+        if (sopaSelectedCells.length === 1 || sopaIsValidDirection(lastCell, { row, col })) {
+          sopaSelectedCells.push({ row, col, element: this });
+          this.classList.add('selected');
+        }
+      }
+    }
+
+    function sopaIsValidDirection(lastCell, newCell) {
+      if (sopaSelectedCells.length < 2) return true;
+
+      const firstCell = sopaSelectedCells[0];
+      const dRow1 = Math.sign(lastCell.row - firstCell.row);
+      const dCol1 = Math.sign(lastCell.col - firstCell.col);
+
+      const dRow2 = Math.sign(newCell.row - lastCell.row);
+      const dCol2 = Math.sign(newCell.col - lastCell.col);
+
+      return dRow1 === dRow2 && dCol1 === dCol2;
+    }
+
+    function sopaEndSelection() {
+      if (!sopaIsSelecting) return;
+      sopaIsSelecting = false;
+
+      sopaCheckWord();
+      sopaClearSelection();
+    }
+
+    function sopaClearSelection() {
+      document.querySelectorAll('#sopaWordGrid .grid-cell.selected').forEach(cell => {
+        if (!cell.classList.contains('found')) {
+          cell.classList.remove('selected');
+        }
+      });
+    }
+
+    function sopaCheckWord() {
+      if (sopaSelectedCells.length < 2) return;
+
+      const word = sopaSelectedCells.map(cell => cell.element.textContent).join('');
+      const reverseWord = word.split('').reverse().join('');
+
+      sopaWordsPlaced.forEach(placedWord => {
+        if ((word === placedWord.word || reverseWord === placedWord.word) && !sopaFoundWords.has(placedWord.word)) {
+          sopaFoundWords.add(placedWord.word);
+          sopaMarkWordAsFound(placedWord);
+          sopaUpdateWordsList();
+          sopaUpdateStats();
+
+          if (sopaFoundWords.size === sopaWordsPlaced.length) {
+            sopaShowCompletionMessage();
+          }
+        }
+      });
+    }
+
+    function sopaMarkWordAsFound(placedWord) {
+      placedWord.positions.forEach(pos => {
+        const cell = document.querySelector(`#sopaWordGrid [data-row="${pos.row}"][data-col="${pos.col}"]`);
+        if (cell) {
+          cell.classList.add('found');
+          cell.classList.remove('selected');
+        }
+      });
+    }
+
+    function sopaRenderWordsList() {
+      const wordsListElement = document.getElementById('sopaWordsList');
+      if (!wordsListElement) return;
+
+      wordsListElement.innerHTML = '';
+
+      SOPA_WORDS.forEach(word => {
+        const exists = sopaWordsPlaced.some(w => w.word === word);
+        if (!exists) return;
+
+        const wordItem = document.createElement('div');
+        wordItem.className = 'word-item';
+        wordItem.textContent = word.toLowerCase();
+        wordItem.dataset.word = word;
+        wordsListElement.appendChild(wordItem);
+      });
+    }
+
+    function sopaUpdateWordsList() {
+      sopaFoundWords.forEach(word => {
+        const wordItem = document.querySelector(`#sopaWordsList [data-word="${word}"]`);
+        if (wordItem) {
+          wordItem.classList.add('found');
+        }
+      });
+    }
+
+    function sopaUpdateStats() {
+      const foundEl = document.getElementById('sopaFoundCount');
+      if (foundEl) foundEl.textContent = String(sopaFoundWords.size);
+    }
+
+    function sopaShowCompletionMessage() {
+      setTimeout(() => {
+        const msg = document.getElementById('sopaCompletionMessage');
+        if (msg) msg.classList.add('show');
+      }, 300);
+    }
+
+    function sopaResetGame() {
+      sopaCreateGrid();
+      sopaRenderGrid();
+      sopaRenderWordsList();
+      sopaFoundWords.clear();
+      sopaSelectedCells = [];
+      sopaUpdateStats();
+
+      const totalEl = document.getElementById('sopaTotalWords');
+      if (totalEl) totalEl.textContent = String(sopaWordsPlaced.length);
+
+      const msg = document.getElementById('sopaCompletionMessage');
+      if (msg) msg.classList.remove('show');
+    }
+
+    // Inicializar
+    window.onload = () => {
+      snakeResizeCanvas();
+      initMemoryGame();
+      initPuzzle();
+      initAssociacao();
+      snakeGenerateFood();
+      snakeEnsureRunning();
+      initQuiz();
+      sopaResetGame();
+    };
+
+    window.addEventListener('resize', snakeResizeCanvas);
+  </script>
+
+  <script>
+    // Envia a altura real do conteúdo ao pai (iframe parent)
+    function enviarAltura() {
+      const altura = document.documentElement.scrollHeight;
+      window.parent.postMessage({ type: 'ruralidades-altura', altura: altura }, '*');
+    }
+
+    // Envia sempre que o conteúdo muda
+    const observer = new ResizeObserver(enviarAltura);
+    observer.observe(document.body);
+    window.addEventListener('load', enviarAltura);
+  </script>
+</body>
+</html>
